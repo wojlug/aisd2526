@@ -1,0 +1,212 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{polski}
+\usepackage[margin=2.5cm]{geometry}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage[svgnames]{xcolor}
+
+\usepackage{listings}
+\lstdefinestyle{mojStylCpp}{
+    language=C++,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color[rgb]{0,0,1},
+    commentstyle=\color[rgb]{0.1,0.5,0.1},
+    stringstyle=\color[rgb]{0.6,0.1,0.1},
+    backgroundcolor=\color[rgb]{0.95,0.95,0.95},
+    breaklines=true,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    showstringspaces=false,
+    captionpos=b
+}
+\lstset{style=mojStylCpp}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+}
+
+% ======================================================
+%                 DOKUMENT WŁAŚCIWY
+% ======================================================
+
+\title{Sprawozdanie z Analizy Algorytmów Sortowania - Lista 2}
+\author{Wojciech Ługowski (287292)}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ------------------------------------------------------
+\section{Wstęp}
+% ------------------------------------------------------
+
+Celem niniejszego sprawozdania jest analiza wydajności algorytmów sortowania o złożoności liniowo-logarytmicznej ($O(n \log n)$) i liniowej ($O(n)$) oraz ocena efektywności sortowania na listach.
+
+W ramach listy zadań zaimplementowano i przetestowano następujące algorytmy:
+\begin{itemize}
+    \item \textbf{Quick Sort}: Klasyczny algorytm z jednym piwotem.
+    \item \textbf{Dual Pivot Quick Sort}: Modyfikacja wykorzystująca dwa piwoty.
+    \item \textbf{Radix Sort}: Sortowanie pozycyjne (badano wpływ podstawy $d$).
+    \item \textbf{Bucket Sort}: Sortowanie kubełkowe.
+    \item \textbf{Insertion Sort na Liście}: Sortowanie przez wstawianie na liście jednokierunkowej.
+\end{itemize}
+
+% ------------------------------------------------------
+\section{Implementacja - kluczowe fragmenty}
+% ------------------------------------------------------
+
+\subsection{Dual Pivot Quick Sort}
+Algorytm wykorzystuje dwa piwoty do podziału tablicy na trzy części, co teoretycznie zmniejsza liczbę porównań.
+
+\begin{lstlisting}[language=C++, caption={Fragment funkcji PartitionDual}]
+pair<int, int> PartitionDual(int A[], int s, int e, long long &comp, long long &sign) {
+    if (A[s] > A[e]) { swap(A[s], A[e]); sign += 3; }
+    int p1 = A[s], p2 = A[e]; 
+    // ... (logika podzialu na 3 czesci) ...
+    return {i - 1, k + 1};
+}
+\end{lstlisting}
+
+\subsection{Radix Sort (Obsługa liczb ujemnych)}
+Zastosowano przesunięcie zakresu wartości, aby umożliwić obsługę liczb ujemnych w algorytmie pozycyjnym.
+
+\begin{lstlisting}[language=C++, caption={Modyfikacja RadixSort}]
+void ModRadixSort(int A[], int n, ... int base) {
+    // ... znalezienie minVal ...
+    if (minVal < 0) {
+        for (int i = 0; i < n; i++) A[i] -= minVal; // Przesuniecie
+    }
+    // ... sortowanie wlasciwe ...
+    if (minVal < 0) {
+        for (int i = 0; i < n; i++) A[i] += minVal; // Przywrocenie
+    }
+}
+\end{lstlisting}
+
+
+\newpage
+\subsection{Listy (Insertion Sort)}
+Operacje na wskaźnikach w liście jednokierunkowej.
+
+\begin{lstlisting}[language=C++, caption={Wstawianie do posortowanej listy}]
+void InsertionSortList(ListNode** head_ref, ...) {
+    // ...
+     while (current != NULL) {
+        ListNode *next = current->next;
+        sign++;
+        sortedInsert(&sorted, current, comp, sign);
+        current = next;
+        sign++;
+    }
+    *head_ref = sorted;
+    // ...
+}
+\end{lstlisting}
+
+\newpage
+% ------------------------------------------------------
+\section{Wyniki i Wykresy}
+% ------------------------------------------------------
+
+Poniżej przedstawiono kluczowe wykresy obrazujące wydajność badanych algorytmów, wraz ze skorygowaną analizą, odpowiadającą rzeczywistym wynikom pomiarów.
+
+\subsection{Wykres 1: Porównanie ogólne (Czas)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{sprawozdanie_2/wykresy-lista2/calosc.png} 
+    \caption{Zależność czasu wykonywania od liczby elementów $N$ dla różnych algorytmów.}
+    \label{fig:wykres1}
+\end{figure}
+
+\textbf{Analiza:} Wykres prowadzi do interesujących obserwacji, które nie pokrywają się w pełni z czystą teorią złożoności. Mimo że BucketSort teoretycznie posiada złożoność $O(n)$, w praktyce okazał się najmniej optymalnym rozwiązaniem dla badanych danych, osiągając gorsze czasy niż algorytmy klasy $O(n \log n)$. Wynika to z dużego narzutu czasowego związanego z alokacją pamięci dla dynamicznych kubełków (`std::vector`). Z kolei QuickSort potwierdził swoją dominację jako algorytm szybki i lekki pamięciowo.
+
+\subsection{Wykres 2: QuickSort vs DualPivot vs Bucket (Porównania)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{sprawozdanie_2/wykresy-lista2/mod_bucket.png}
+    \caption{Analiza porównawcza QuickSorta, Dual Pivot QuickSorta oraz BucketSort.}
+    \label{fig:wykres2}
+\end{figure}
+
+\textbf{Analiza:} Wykres potwierdza, że wersja DualPivot QuickSorta wykonuje mniej porównań niż wersja klasyczna, co jest zgodne z założeniami. Widać jednak wyraźnie, że BucketSort odstaje wydajnościowo od rodziny QuickSort. Koszt operacji na strukturach danych (listy/wektory w kubełkach) przewyższył zysk z braku porównań całego zbioru.
+
+\subsection{Wykres 3: Radix Sort - wpływ podstawy $d$}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{sprawozdanie_2/wykresy-lista2/podstawa_radix.png}
+    \caption{Czas działania RadixSort w zależności od wybranej podstawy systemu liczbowego ($d$).}
+    \label{fig:wykres3}
+\end{figure}
+
+\textbf{Analiza:} Wykres pokazuje wyraźną korelację między wielkością podstawy $d$ a szybkością algorytmu. Dla małej podstawy ($d=2$) czas wykonania jest najwyższy (duża liczba przebiegów pętli). Zwiększenie podstawy do $d=256$ redukuje liczbę przebiegów 8-krotnie, co widać jako wyraźny spadek czasu na wykresie.
+
+\subsection{Wykres 4: Sortowanie Listy vs Tablicy}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{sprawozdanie_2/wykresy-lista2/nieopytmalny_is.png}
+    \caption{Porównanie czasu sortowania InsertionSort na liście jednokierunkowej.}
+    \label{fig:wykres4}
+\end{figure}
+
+\textbf{Analiza:} Krzywa czasu dla listy rośnie gwałtownie (kwadratowo), a operacje na strukturze listowej są znacząco wolniejsze niż na tablicy.  Elementy listy są rozrzucone w pamięci RAM, co powoduje liczne błędy chybienia w pamięci podręcznej (cache misses), podczas gdy tablica jest spójnym blokiem pamięci.
+
+% ------------------------------------------------------
+\subsection{Dane liczbowe}
+% ------------------------------------------------------
+
+\begin{table}[H]
+    \centering
+    \caption{Szczegółowe wyniki dla $N=50\,000$ (Dane losowe).}
+    \label{tab:wyniki}
+    \begin{tabular}{lrrr}
+        \toprule
+        \textbf{Algorytm} & \textbf{Czas (ms)} & \textbf{Porównania} & \textbf{Przypisania} \\
+        \midrule
+        QuickSort & 6 & 951434 & 1619525 \\
+        DualPivotQuickSort & 5 & 937597 & 1158510 \\
+        RadixSort ($d=256$) & 1 & 49999 & 200006 \\
+        BucketSort & 9 & 74330 & 148662 \\
+        InsertionSortList\textsuperscript{*} & 107 & 25269628 & 25299631 \\
+        \bottomrule
+    \end{tabular}
+    \\ \footnotesize{*Dla Listy podano wynik dla mniejszego $N$.}
+\end{table}
+
+% ------------------------------------------------------
+\section{Wnioski}
+% ------------------------------------------------------
+
+Na podstawie zebranych danych, które w istotny sposób zweryfikowały teorię w zderzeniu z rzeczywistą implementacją, sformułowano następujące wnioski:
+
+\begin{enumerate}
+    \item \textbf{Teoria a narzut implementacyjny (BucketSort):}
+    Mimo teoretycznej złożoności $O(n)$, BucketSort okazał się najwolniejszym z badanych algorytmów (dla tablic). Wynika to z faktu, że w C++ dynamiczne tworzenie kubełków (`std::vector`) i zarządzanie pamięcią jest bardzo kosztowne. Przy testowanych rozmiarach danych ($N=100\,000$) narzut ten jest większy niż czas zaoszczędzony na braku porównań. QuickSort, który działa w miejscu (bez alokacji), wygrywa.
+    
+    \item \textbf{QuickSort - uniwersalny zwycięzca:}
+    QuickSort (zarówno klasyczny, jak i Dual Pivot) okazał się najlepszym kompromisem. Jest bardzo szybki, przewidywalny i nie zużywa nadmiernie pamięci RAM, co czyni go lepszym wyborem inżynierskim niż skomplikowane algorytmy kubełkowe.
+    
+    \item \textbf{Dual Pivot:}
+    Potwierdzono, że wersja Dual Pivot wykonuje mniej przypisań, jednak nie przekłada się to bezpośrednio na krótszy czas działania. Dodatkowe warunki sterujące zwiększają liczbę gałęzi w kodzie, co ogranicza możliwość wykorzystania predykcji skoków i niweluje spodziewane korzyści.
+    
+    \item \textbf{Optymalizacja RadixSort:}
+    Wykazano, że dla algorytmów pozycyjnych kluczowa jest podstawa. $d=256$ jest znacznie szybsze niż $d=2$, ponieważ lepiej wykorzystuje architekturę bajtową komputera.
+    
+    \item \textbf{Nieefektywność List:}
+    Sortowanie na liście jest skrajnie nieefektywne. Nawet ten sam algorytm działa na liście wielokrotnie wolniej niż na tablicy. Wniosek: jeśli to możliwe, należy unikać operacji sortowania bezpośrednio na listach powiązanych.
+\end{enumerate}
+
+\end{document}
